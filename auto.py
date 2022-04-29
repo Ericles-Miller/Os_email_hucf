@@ -5,6 +5,8 @@ from email.mime.text import MIMEText
 import re
 import time
 import datetime
+
+from pymysql import NULL
 from tools import File, Crypt
 from database import Mensage
 
@@ -22,7 +24,7 @@ def gmail(sender_address, sender_pass, receiver_address, subject, mail_content):
     session.starttls() #enable security
     session.login(sender_address, sender_pass) #login with mail_id and password
     text = message.as_string()
-    #session.sendmail(sender_address, receiver_address, text)
+    session.sendmail(sender_address, receiver_address, text)
     session.quit()
     print('Mail Sent')
 
@@ -56,11 +58,18 @@ def email_os():
     for solicitation in solicitations:
         if solicitation['status'] == 'A':
             subject = 'Ordem de serviço aberta'
-            mail_content = f"Olá {solicitation['requester'].strip().split(' ')[0].capitalize()}, \n\nSua ordem de serviço,\n\nNúmero: {solicitation['identifier']} \nDescrição: {solicitation['service']} \n\nFoi aberta por {solicitation['responsible'].strip().split(' ')[0].capitalize()}. Em casos de dúvidas, contatar o responsável pela execução da OS. \n\nEsta mensagem é automática e informativa, não há necessidade de responde-lá."
+            if solicitation['responsible'] is None:
+                mail_content = f"Olá {solicitation['requester'].strip().split(' ')[0].capitalize()}, \n\nSua ordem de serviço,\n\nNúmero: {solicitation['identifier']} \nDescrição: {solicitation['service']} \n\nFoi aberta por. Em casos de dúvidas, contatar o responsável pela execução da OS. \n\nEsta mensagem é automática e informativa, não há necessidade de responde-lá."
+            else:
+                mail_content = f"Olá {solicitation['requester'].strip().split(' ')[0].capitalize()}, \n\nSua ordem de serviço,\n\nNúmero: {solicitation['identifier']} \nDescrição: {solicitation['service']} \n\nFoi aberta por {solicitation['responsible'].strip().split(' ')[0].capitalize()}. Em casos de dúvidas, contatar o responsável pela execução da OS. \n\nEsta mensagem é automática e informativa, não há necessidade de responde-lá."
 
-        if solicitation['status'] == 'C':
+        if solicitation['status'] == 'C':     
             subject = 'Ordem de serviço finalizada'
-            mail_content = f"Olá {solicitation['requester'].strip().split(' ')[0].capitalize()}, \n\nSua ordem de serviço,\n\nNúmero: {solicitation['identifier']} \nDescrição: {solicitation['service']} \n\nFoi concluida por {solicitation['user_ends_request'].strip().split(' ')[0].capitalize()} no período de {solicitation['start_date']} a {solicitation['end_date']}. Para tanto, avalie, se possível, o nosso serviço, acesando o seguinte caminho no SOUL MV:\nServiços de Apoio> Manutenção> Ordem Serviço> Avaliação de Ordem de Serviço.\n\nEsta mensagem é automática e informativa, não há necessidade de responde-lá."
+        
+            if solicitation['user_ends_request'] is None: #.strip().split(' ')[0]
+                mail_content = f"Olá {solicitation['requester'].strip().split(' ')[0].capitalize()}, \n\nSua ordem de serviço,\n\nNúmero: {solicitation['identifier']} \nDescrição: {solicitation['service']} \n\nFoi concluida no período de {solicitation['start_date']} a {solicitation['end_date']}. Para tanto, avalie, se possível, o nosso serviço, acesando o seguinte caminho no SOUL MV:\nServiços de Apoio> Manutenção> Ordem Serviço> Avaliação de Ordem de Serviço.\n\nEsta mensagem é automática e informativa, não há necessidade de responde-lá." 
+            else:  
+                mail_content = f"Olá {solicitation['requester'].strip().split(' ')[0].capitalize()}, \n\nSua ordem de serviço,\n\nNúmero: {solicitation['identifier']} \nDescrição: {solicitation['service']} \n\nFoi concluida por {solicitation['user_ends_request'].strip().split(' ')[0].capitalize()} no período de {solicitation['start_date']} a {solicitation['end_date']}. Para tanto, avalie, se possível, o nosso serviço, acesando o seguinte caminho no SOUL MV:\nServiços de Apoio> Manutenção> Ordem Serviço> Avaliação de Ordem de Serviço.\n\nEsta mensagem é automática e informativa, não há necessidade de responde-lá."
 
         if solicitation['status'] == 'D':
             subject = 'Ordem de serviço cancelada.'
